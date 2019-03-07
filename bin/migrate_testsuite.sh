@@ -27,7 +27,7 @@ function fixup_includes() {
     sed -i 's/pstl_test/support\/pstl_test/' $1
 
     sed -i '/_foo_/{n; d}' $1
-    sed -i '/utils\.h/c#else\n_bar_\n_baz_\n#endif \/\/ PSTL_STANDALONE_TESTS' $1
+    sed -i '/utils\.h/i#else\n_bar_\n_baz_\n#endif \/\/ PSTL_STANDALONE_TESTS\n' $1
     sed -i '/_foo_/c#ifdef PSTL_STANDALONE_TESTS' $1
     sed -i '/_bar_/c#include <execution>' $1
     
@@ -38,21 +38,33 @@ function fixup_includes() {
     elif grep -q "pstl/numeric" $1; then
         sed -i '/_baz_/c#include <numeric>' $1
     fi
+
+    sed -i 's/utils\.h/support\/utils.h/' $1
+}
+
+function mogrify_test_names() {
+    local -n tfiles=$1
+    local -n res=$2
+    for tfile in "${tfiles[@]}"
+    do
+	dfile=${tfile/test_/}
+	dfile=${dfile/\.cpp/\.pass\.cpp}
+	res[$tfile]=$dfile
+    done
 }
 
 function rename_tests() {
     dest="$tdest/$1"
     mkdir -p $dest
-    
-    local -n ops=$2
-    for tfile in "${ops[@]}"
+
+    local -A names
+    mogrify_test_names $2 names
+    for tfile in "${!names[@]}"
     do
-	dfile=${tfile/test_/}
-	dfile=${dfile/\.cpp/\.pass\.cpp}
-        ffile="$dest/$dfile"
-	cp $torigin/$tfile $ffile
-	fixup_copyright $ffile
-	fixup_includes $ffile
+        ffile="$dest/${names[$tfile]}"
+    	cp $torigin/$tfile $ffile
+     	fixup_copyright $ffile
+     	fixup_includes $ffile
     done
 }
 
@@ -64,6 +76,7 @@ numeric_ops=(
     test_adjacent_difference.cpp
     test_reduce.cpp
 )
+
 rename_tests "numerics/numeric.ops" numeric_ops
 
 # Migrate memory test files
