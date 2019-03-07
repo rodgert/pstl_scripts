@@ -58,14 +58,36 @@ function rename_tests() {
     mkdir -p $dest
 
     local -A names
+    local pnames=""
     mogrify_test_names $2 names
+    local first=true
     for tfile in "${!names[@]}"
     do
-        ffile="$dest/${names[$tfile]}"
+	nfile="${names[$tfile]}"
+        ffile="$dest/$nfile"
+  	if ! $first ; then
+	    pnames+=";"
+	fi
+        pnames+="$nfile"
+	first=false
     	cp $torigin/$tfile $ffile
      	fixup_copyright $ffile
      	fixup_includes $ffile
     done
+
+    cat > "$dest/CMakeLists.txt" <<EOF
+set(PASS_SOURCES
+	$pnames
+)
+EOF
+    cat >> "$dest/CMakeLists.txt" <<'EOF'
+
+foreach(test_source ${PASS_SOURCES})
+  add_pass_test(${test_source})
+endforeach(test_source ${PASS_SOURCES})
+
+EOF
+    sed -i 's/;/;\n\t/g' "$dest/CMakeLists.txt"
 }
 
 # Migrate numeric test files
