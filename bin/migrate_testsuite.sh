@@ -4,12 +4,13 @@
 
 torigin="test"
 tbasedir="testsuite"
+MV="git mv"
 
 # Migrate support files to testsuite/support
 tsup="$tbasedir/support"
 mkdir -p "$tsup"
-cp "$torigin/pstl_test_config.h" "$tsup"
-cp "$torigin/utils.h" "$tsup/parallel_utils.h"
+$MV "$torigin/pstl_test_config.h" "$tsup"
+$MV "$torigin/utils.h" "$tsup/parallel_utils.h"
 
 # Tests go initially to testsuite/std
 tdest="$tbasedir/std"
@@ -70,24 +71,26 @@ function rename_tests() {
 	fi
         pnames+="$nfile"
 	first=false
-    	cp $torigin/$tfile $ffile
+    	$MV $torigin/$tfile $ffile
      	fixup_copyright $ffile
      	fixup_includes $ffile
     done
 
-    cat > "$dest/CMakeLists.txt" <<EOF
+    cmakef="$dest/CMakeLists.txt"
+
+    cat > "$cmakef" <<EOF
 set(PASS_SOURCES
 	$pnames
 )
 EOF
-    cat >> "$dest/CMakeLists.txt" <<'EOF'
+    cat >> "$cmakef" <<'EOF'
 
 foreach(test_source ${PASS_SOURCES})
   add_pass_test(${test_source})
 endforeach(test_source ${PASS_SOURCES})
 
 EOF
-    sed -i 's/;/;\n\t/g' "$dest/CMakeLists.txt"
+    sed -i 's/;/;\n\t/g' "$cmakef"
 }
 
 # Migrate numeric test files
@@ -98,7 +101,6 @@ numeric_ops=(
     test_adjacent_difference.cpp
     test_reduce.cpp
 )
-
 rename_tests "numerics/numeric.ops" numeric_ops
 
 # Migrate memory test files
@@ -198,8 +200,6 @@ alg_partitions=(
     test_is_partitioned.cpp 
 )
 rename_tests "algorithms/alg.modifying.operations/alg.partitions" alg_partitions
-
-   
 
 
 
